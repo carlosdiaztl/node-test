@@ -1,0 +1,58 @@
+name: deployProject
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      mydatabase:
+        image: mysql:latest
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: false
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: E-commerce
+        ports:
+          - 3306:3306/tcp
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: PHP VERSION
+        run: php -v
+
+      - name: Composer install
+        run: composer install
+
+      - name: install dependecies node-packages
+        run: npm install
+
+      # - name: clean confi
+      #   run: php artisan config:cache
+      - name: Prepare the application
+        run: |
+          php -r "file_exists('.env') || copy('.envCI', '.env');"
+          php artisan key:generate
+
+      - name: Run Migration
+        run: php artisan migrate --no-interaction
+
+      - name: veirficacion de rutas
+        run: php artisan route:list
+      - name: build app
+        run: npm run build
+
+      - name: image link to storage
+        run: php artisan storage:link
+      - name: creacion de directorio
+        run: mkdir -p storage/app/public/images
+      - name: comando de permisos
+        run: chmod -R 755 storage
+      - name: comando de permisos
+        run: chmod -R 777 /home/runner/work/Evertec-Ecommerce/Evertec-Ecommerce/storage/app/public/images
+      - name: psr12 syntax
+        run: vendor/bin/php-cs-fixer fix
+      - name: PHP STAN
+        run: vendor/bin/phpstan analyse app tests --level=1
+      - name: Laravel Test
+        run: php artisan test
