@@ -1,4 +1,4 @@
-name: deployProject
+name: deployNodeProject
 on: push
 jobs:
   build:
@@ -10,7 +10,7 @@ jobs:
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: false
           MYSQL_ROOT_PASSWORD: password
-          MYSQL_DATABASE: E-commerce
+          MYSQL_DATABASE: node_db
         ports:
           - 3306:3306/tcp
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
@@ -18,41 +18,24 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: PHP VERSION
-        run: php -v
+      - name: Node.js setup
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
 
-      - name: Composer install
-        run: composer install
-
-      - name: install dependecies node-packages
+      - name: Install dependencies
         run: npm install
 
-      # - name: clean confi
-      #   run: php artisan config:cache
-      - name: Prepare the application
-        run: |
-          php -r "file_exists('.env') || copy('.envCI', '.env');"
-          php artisan key:generate
+      # - name: Prepare environment
+      #   run: |
+      #     if [ ! -f .env ]; then cp .env.example .env; fi
+      #     npm run generate-env-key
 
-      - name: Run Migration
-        run: php artisan migrate --no-interaction
+      # - name: Run migrations
+      #   run: npm run migrate
 
-      - name: veirficacion de rutas
-        run: php artisan route:list
-      - name: build app
+      - name: Build application
         run: npm run build
 
-      - name: image link to storage
-        run: php artisan storage:link
-      - name: creacion de directorio
-        run: mkdir -p storage/app/public/images
-      - name: comando de permisos
-        run: chmod -R 755 storage
-      - name: comando de permisos
-        run: chmod -R 777 /home/runner/work/Evertec-Ecommerce/Evertec-Ecommerce/storage/app/public/images
-      - name: psr12 syntax
-        run: vendor/bin/php-cs-fixer fix
-      - name: PHP STAN
-        run: vendor/bin/phpstan analyse app tests --level=1
-      - name: Laravel Test
-        run: php artisan test
+      - name: Run tests
+        run: npm test
