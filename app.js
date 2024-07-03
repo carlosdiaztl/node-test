@@ -1,41 +1,27 @@
+const express = require('express');
+const knex = require('./connection'); // Asegúrate de que esta ruta sea correcta
 
-const kenx = require('./connection.js')
-const express = require('express')
-const app = express()
-const port = 3000
+const app = express();
 app.use(express.json());
-const Users = kenx('users')
 
+const Users = knex('users');
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
-  // kenx.select('*').from('users').then(data => {
-  //   console.log(data)
-  // })
-
-  // const user = Users.where('name', 'carlos').first().then(data => {
-  //   console.log(data);
-  // })
-  
-  console.log(`Example app listening on port ${kenx('knex').client.addListener}`)
-})
-
-app.post('/', (req, res) => {
+app.post('/', async (req, res) => {
   const newName = req.body.name;
 
-  Users.update({ name: newName })
-    .where('id', req.body.id)
-    .then(data => {
-      if (data === 0) {
-        res.status(404).send('User not found');
-        
-      }else{
-
-        res.send({estado:'ok',data:data});
-      }
-    })
-    .catch(err => {
-      console.error(err);
-      res.status(500).send('Failed to update user name');
-    });
+  try {
+    const data = await Users.update({ name: newName })
+      .where('id', req.body.id);
+    
+    if (data === 0) {
+      res.status(404).send('User not found');
+    } else {
+      res.send({ estado: 'ok', data: data });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Failed to update user name');
+  }
 });
+
+module.exports = app;
